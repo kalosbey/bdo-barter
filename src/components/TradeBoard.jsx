@@ -499,6 +499,11 @@ export function TradeBoard({ state, updateState }) {
           ⚠️ {dict.overweightWarning || "Overweight! You cannot do this route in one trip."}
         </div>
       )}
+      {totalParley > state.parleyCurrent && (
+        <div className="overweight-warning" style={{ borderColor: '#ffa500' }}>
+          ⚡ Not enough parley! Route needs {fmt(totalParley)} but you only have {fmt(state.parleyCurrent)}.
+        </div>
+      )}
 
       {/* Inline Parley Tracker */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
