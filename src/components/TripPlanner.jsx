@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TIER_DATA } from '../data/barter-data-v3';
 import { TIER_NAMES } from '../data/lang';
 
@@ -7,7 +7,18 @@ import { TIER_NAMES } from '../data/lang';
  * Shows planned trips below the trade route board
  */
 export function useTripPlanner(state, updateState, MAX_WEIGHT) {
-  const [trips, setTrips] = useState([]); // Array of trip objects
+  // Load trips from localStorage on init
+  const [trips, setTrips] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bdo_planned_trips');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Persist trips to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('bdo_planned_trips', JSON.stringify(trips));
+  }, [trips]);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [optimizerGoal, setOptimizerGoal] = useState('stocking');
   const [optimizerParley, setOptimizerParley] = useState(state.parleyCurrent || 0);
