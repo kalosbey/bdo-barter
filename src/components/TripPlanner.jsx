@@ -64,11 +64,13 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
 
       // Plan one trip: greedily add trades until weight limit
       const tripTrades = [];
-      let tripWeight = 0;
       let tripParley = 0;
       const tripShipInv = {}; // items on ship during this trip
 
       // Process trades in tier order (low to high)
+      // shipCargo = actual weight currently on ship
+      let shipCargo = 0;
+
       for (const trade of allTrades) {
         const rem = remaining[trade._origIdx];
         if (rem <= 0) continue;
@@ -93,40 +95,36 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
             if (onShip + inStorage < 1) break;
           }
 
-          // Check weight: simulate adding this exchange
-          // Items loaded from port + items gained - items traded away
-          let testWeight = 0;
-          // Current trip items + this new exchange
-          const testTrades = [...tripTrades, { ...trade, _count: canDo + 1 }];
-          // But we need peak weight, simplified: just track net gained weight
-          const netGain = (toQty * toWeight) - (isT0(trade.fromTier) ? 0 : fromWeight);
-          const newTripWeight = tripWeight + (toQty * toWeight);
-          // For first exchange, we also need to load the "from" item from port if not on ship
-          let loadWeight = 0;
+          // Weight check: simulate loading from-item (if from port) then trading
+          let loadFromPort = 0;
           if (!isT0(trade.fromTier)) {
             const shipKey = trade.fromTier + ':' + trade.fromName;
             if ((tripShipInv[shipKey] || 0) < 1) {
-              loadWeight = fromWeight; // must bring from port
+              loadFromPort = fromWeight; // need to bring from port
             }
           }
 
-          if (tripWeight + (toQty * toWeight) + loadWeight > maxWt) break;
+          // After this trade: cargo += loadFromPort (load item) - fromWeight (trade away) + toQty*toWeight (receive)
+          // Peak moment is right before trading (when loaded item is still on ship)
+          const peakIfLoaded = shipCargo + loadFromPort;
+          // After trade completes: 
+          const afterTrade = shipCargo + loadFromPort - fromWeight + (toQty * toWeight);
+          
+          if (Math.max(peakIfLoaded, afterTrade) > maxWt) break;
 
           canDo++;
           tripParley += parleyPerExchange;
-          tripWeight += (toQty * toWeight);
+          shipCargo = afterTrade;
 
-          // Update ship inventory for chain tracking within trip
+          // Update ship inventory for chain tracking
           if (!isT0(trade.fromTier)) {
             const shipKey = trade.fromTier + ':' + trade.fromName;
             if ((tripShipInv[shipKey] || 0) >= 1) {
               tripShipInv[shipKey] -= 1;
             } else {
-              // Take from storage
               const invArr = simInv[trade.fromTier] || [];
               const idx = invArr.findIndex(x => x.name === trade.fromName);
               if (idx !== -1) invArr[idx].qty -= 1;
-              tripWeight += fromWeight; // loaded from port
             }
           }
           const toKey = trade.toTier + ':' + trade.toName;
@@ -175,7 +173,7 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
         id: safety,
         trades: tripTrades,
         totalParley: tripParley,
-        peakWeight: tripWeight,
+        peakWeight: shipCargo,
         silverProfit,
         ccGained,
         completed: false,
