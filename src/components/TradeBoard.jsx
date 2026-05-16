@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LANG, TIER_NAMES } from '../data/lang';
-import { TIER_DATA, SHIP_DATA } from '../data/barter-data-v3';
+import { TIER_DATA, SHIP_DATA, PARLEY_CONFIG } from '../data/barter-data-v3';
 import { IconSelectBtn, IconPickerModal } from './IconPickerModal';
 import { useTripPlanner } from './TripPlanner';
 
@@ -499,6 +499,46 @@ export function TradeBoard({ state, updateState }) {
           ⚠️ {dict.overweightWarning || "Overweight! You cannot do this route in one trip."}
         </div>
       )}
+
+      {/* Inline Parley Tracker */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+        <div style={{ background: 'var(--bg-lighter)', padding: '12px 16px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>⚡ {dict.currentParley || "Current Parley"}</span>
+            <input type="number" min="0" max="1000000" value={state.parleyCurrent} onChange={e => updateState({ parleyCurrent: Math.min(PARLEY_CONFIG.maxParley, Math.max(0, parseInt(e.target.value) || 0)) })} style={{ width: '110px', padding: '6px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '6px', textAlign: 'right' }} />
+          </div>
+          <div className="parley-bar" style={{ height: '8px' }}>
+            <div className="parley-fill" style={{ width: `${(state.parleyCurrent / PARLEY_CONFIG.maxParley) * 100}%` }}></div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <span>{fmt(state.parleyCurrent)} / {fmt(PARLEY_CONFIG.maxParley)}</span>
+            <span>Route uses: {fmt(totalParley)}</span>
+          </div>
+        </div>
+        <div style={{ background: 'var(--bg-lighter)', padding: '12px 16px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>🔄 {dict.refreshTracker || "Refreshes"}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Trade</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {Array.from({ length: state.valuePack ? PARLEY_CONFIG.refreshValuePack.tradeRefresh : PARLEY_CONFIG.refreshBase.tradeRefresh }).map((_, i) => (
+                  <div key={i} className={`refresh-dot ${i < state.tradeRefreshUsed ? 'used' : ''}`} onClick={() => updateState({ tradeRefreshUsed: i < state.tradeRefreshUsed ? i : i + 1 })} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Ship Material</div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className={`refresh-dot ${i < state.shipRefreshUsed ? 'used' : ''}`} onClick={() => updateState({ shipRefreshUsed: i < state.shipRefreshUsed ? i : i + 1 })} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="board-list">
         {(() => {
