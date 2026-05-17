@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { findCoords, saveCustomCoord, getCustomCoords, removeCustomCoord } from '../data/map-data';
+import { findCoords, saveCustomCoord, getCustomCoords, removeCustomCoord, MAP_COORDS } from '../data/map-data';
 
 export function RouteMap({ trips, onClose }) {
   const [activeTripId, setActiveTripId] = useState(trips.length > 0 ? trips[0].id : null);
@@ -8,6 +8,7 @@ export function RouteMap({ trips, onClose }) {
   const [bgImage, setBgImage] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [renderTrigger, setRenderTrigger] = useState(0); // force re-render when custom coords change
+  const [pendingClick, setPendingClick] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export function RouteMap({ trips, onClose }) {
   };
 
   const handleMapClick = (e) => {
-    if (!editMode) return;
+    if (!editMode || pendingClick) return;
     
     // Get coordinates relative to the map container
     const rect = e.currentTarget.getBoundingClientRect();
@@ -60,11 +61,7 @@ export function RouteMap({ trips, onClose }) {
       }
     }
 
-    const name = window.prompt("📍 Edit Mode: Clicked at (" + Math.round(x) + ", " + Math.round(y) + ")\nEnter the exact Island Name for this spot (e.g. 'Lema Island'):");
-    if (name && name.trim() !== "") {
-      saveCustomCoord(name.trim(), x, y);
-      setRenderTrigger(prev => prev + 1); // trigger re-render
-    }
+    setPendingClick({ x, y });
   };
 
   const mapStyle = {
@@ -90,7 +87,7 @@ export function RouteMap({ trips, onClose }) {
     if (!activeTrip && !editMode) return null;
 
     const points = [];
-    if (activeTrip) {
+    if (activeTrip && !editMode) {
       activeTrip.trades.forEach((trade, idx) => {
         const coords = findCoords(trade.location);
         if (coords) {
@@ -293,6 +290,56 @@ export function RouteMap({ trips, onClose }) {
                 {editMode && (
                   <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.8)', color: 'var(--accent-cyan)', padding: '8px 16px', borderRadius: '4px', border: '1px dashed var(--accent-cyan)', pointerEvents: 'none', zIndex: 100 }}>
                     Click anywhere to assign a location!
+                  </div>
+                )}
+                
+                {pendingClick && (
+                  <div style={{
+                    position: 'absolute',
+                    left: `${pendingClick.x}px`,
+                    top: `${pendingClick.y}px`,
+                    transform: 'translate(-50%, -100%)',
+                    marginTop: '-10px',
+                    background: 'var(--bg-darker)',
+                    border: '1px solid var(--accent-cyan)',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.8)',
+                    zIndex: 200,
+                    width: '200px'
+                  }} onClick={e => e.stopPropagation()}>
+                    <label style={{display:'block', marginBottom:'8px', fontSize:'0.85rem', color:'var(--text-secondary)'}}>Select Island Name:</label>
+                    <input 
+                      type="text" 
+                      list="all-islands"
+                      placeholder="Type or select..." 
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                          saveCustomCoord(e.target.value.trim(), pendingClick.x, pendingClick.y);
+                          setPendingClick(null);
+                          setRenderTrigger(prev => prev + 1);
+                        } else if (e.key === 'Escape') {
+                          setPendingClick(null);
+                        }
+                      }}
+                      style={{ width: '100%', padding: '6px', marginBottom: '8px', background:'var(--bg-dark)', border:'1px solid var(--border-color)', color:'white' }} 
+                    />
+                    <datalist id="all-islands">
+                      {Object.keys(MAP_COORDS).sort().map(loc => <option key={loc} value={loc} />)}
+                      {Object.keys(getCustomCoords()).sort().map(loc => <option key={loc} value={loc} />)}
+                    </datalist>
+                    <div style={{display:'flex', gap:'8px'}}>
+                      <button className="btn-primary" style={{flex:1, padding:'4px', fontSize:'0.85rem'}} onClick={(e) => {
+                        const input = e.target.parentElement.previousElementSibling.previousElementSibling;
+                        if (input.value.trim() !== '') {
+                          saveCustomCoord(input.value.trim(), pendingClick.x, pendingClick.y);
+                          setPendingClick(null);
+                          setRenderTrigger(prev => prev + 1);
+                        }
+                      }}>Save</button>
+                      <button className="btn-secondary" style={{flex:1, padding:'4px', fontSize:'0.85rem'}} onClick={() => setPendingClick(null)}>Cancel</button>
+                    </div>
                   </div>
                 )}
               </div>
