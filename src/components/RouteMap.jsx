@@ -9,6 +9,7 @@ export function RouteMap({ trips, onClose }) {
   const [editMode, setEditMode] = useState(false);
   const [renderTrigger, setRenderTrigger] = useState(0); // force re-render when custom coords change
   const [pendingClick, setPendingClick] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -45,8 +46,8 @@ export function RouteMap({ trips, onClose }) {
     
     // Get coordinates relative to the map container
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left) / zoomLevel;
+    const y = (e.clientY - rect.top) / zoomLevel;
 
     // Check if clicking near an existing custom point
     const customCoords = getCustomCoords();
@@ -66,8 +67,8 @@ export function RouteMap({ trips, onClose }) {
 
   const mapStyle = {
     position: 'relative',
-    width: '1000px',
-    height: '800px',
+    width: `${1000 * zoomLevel}px`,
+    height: `${800 * zoomLevel}px`,
     backgroundColor: '#0a1929',
     backgroundImage: bgImage ? `url(${bgImage})` : `
       linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
@@ -109,14 +110,20 @@ export function RouteMap({ trips, onClose }) {
     for (let i = 0; i < points.length - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
-      const length = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+      
+      const x1 = p1.x * zoomLevel;
+      const y1 = p1.y * zoomLevel;
+      const x2 = p2.x * zoomLevel;
+      const y2 = p2.y * zoomLevel;
+
+      const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+      const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
 
       lines.push(
         <div key={`line-${i}`} style={{
           position: 'absolute',
-          left: `${p1.x}px`,
-          top: `${p1.y}px`,
+          left: `${x1}px`,
+          top: `${y1}px`,
           width: `${length}px`,
           height: '2px',
           background: 'var(--accent-cyan)',
@@ -135,8 +142,8 @@ export function RouteMap({ trips, onClose }) {
         {points.map((p, i) => (
           <div key={`point-${i}-${renderTrigger}`} style={{
             position: 'absolute',
-            left: `${p.x}px`,
-            top: `${p.y}px`,
+            left: `${p.x * zoomLevel}px`,
+            top: `${p.y * zoomLevel}px`,
             transform: 'translate(-50%, -50%)',
             zIndex: 3,
             display: 'flex',
@@ -172,8 +179,8 @@ export function RouteMap({ trips, onClose }) {
         {editMode && Object.entries(getCustomCoords()).map(([name, data]) => (
           <div key={`edit-pt-${name}-${renderTrigger}`} style={{
             position: 'absolute',
-            left: `${data.x}px`,
-            top: `${data.y}px`,
+            left: `${data.x * zoomLevel}px`,
+            top: `${data.y * zoomLevel}px`,
             transform: 'translate(-50%, -50%)',
             zIndex: 2,
             display: 'flex',
@@ -292,12 +299,18 @@ export function RouteMap({ trips, onClose }) {
                     Click anywhere to assign a location!
                   </div>
                 )}
+
+                <div style={{ position: 'fixed', bottom: '40px', right: '40px', display: 'flex', gap: '8px', zIndex: 100, background: 'rgba(0,0,0,0.7)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                  <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.max(0.5, z - 0.25)); }}>➖</button>
+                  <div style={{ color: 'white', padding: '0 8px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>{Math.round(zoomLevel * 100)}%</div>
+                  <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.min(4, z + 0.25)); }}>➕</button>
+                </div>
                 
                 {pendingClick && (
                   <div style={{
                     position: 'absolute',
-                    left: `${pendingClick.x}px`,
-                    top: `${pendingClick.y}px`,
+                    left: `${pendingClick.x * zoomLevel}px`,
+                    top: `${pendingClick.y * zoomLevel}px`,
                     transform: 'translate(-50%, -100%)',
                     marginTop: '-10px',
                     background: 'var(--bg-darker)',
