@@ -53,11 +53,40 @@ export const MAP_COORDS = {
 /**
  * Helper to find coordinates using fuzzy matching on the location string.
  */
+export const getCustomCoords = () => {
+  try {
+    const data = localStorage.getItem('bdo_custom_map_coords');
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+export const saveCustomCoord = (name, x, y) => {
+  const custom = getCustomCoords();
+  custom[name] = { x, y, custom: true };
+  localStorage.setItem('bdo_custom_map_coords', JSON.stringify(custom));
+};
+
+export const removeCustomCoord = (name) => {
+  const custom = getCustomCoords();
+  delete custom[name];
+  localStorage.setItem('bdo_custom_map_coords', JSON.stringify(custom));
+};
+
 export const findCoords = (locationString) => {
   if (!locationString) return null;
   const search = locationString.toLowerCase();
   
-  // Try exact or partial match in our dict
+  // 1. Check custom coordinates first
+  const customCoords = getCustomCoords();
+  for (const [key, data] of Object.entries(customCoords)) {
+    if (search.includes(key.toLowerCase()) || key.toLowerCase().includes(search) || key.toLowerCase() === search) {
+      return { name: key, ...data };
+    }
+  }
+
+  // 2. Try exact or partial match in our hardcoded dict
   for (const [key, data] of Object.entries(MAP_COORDS)) {
     if (search.includes(key.toLowerCase()) || key.toLowerCase().includes(search)) {
       return { name: key, ...data };

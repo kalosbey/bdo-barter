@@ -5,6 +5,7 @@ import { TIER_DATA, SHIP_DATA, PARLEY_CONFIG } from '../data/barter-data-v3';
 import { IconSelectBtn, IconPickerModal } from './IconPickerModal';
 import { useTripPlanner } from './TripPlanner';
 import { RouteMap } from './RouteMap';
+import { MAP_COORDS } from '../data/map-data';
 
 export function TradeBoard({ state, updateState }) {
   const dict = LANG[state.lang] || LANG.en;
@@ -425,7 +426,12 @@ export function TradeBoard({ state, updateState }) {
             <div className="add-trade-qty-row" style={{ marginTop: '12px' }}>
               <div className="add-trade-qty-group" style={{ flex: 1 }}>
                 <label>📍 Region / Location (Optional)</label>
-                <input type="text" placeholder="e.g. Iliya, Hakoven, Margoria..." value={wizardDraft.location || ""} onChange={e => setWizardDraft({...wizardDraft, location: e.target.value})} style={{ width: '100%', padding: '8px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)' }} />
+                <input list="map-locations" placeholder="e.g. Iliya, Hakoven..." value={wizardDraft.location || ""} onChange={e => setWizardDraft({...wizardDraft, location: e.target.value})} style={{ width: '100%', padding: '8px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)' }} />
+                <datalist id="map-locations">
+                  {Object.keys(MAP_COORDS).sort().map(loc => (
+                    <option key={loc} value={loc} />
+                  ))}
+                </datalist>
               </div>
             </div>
           </div>
