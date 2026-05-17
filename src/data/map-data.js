@@ -47,7 +47,39 @@ export const MAP_COORDS = {
   "Hakoven Island": { x: 950, y: 400, region: "Hakoven" },
   "Halmad Island": { x: 900, y: 450, region: "Hakoven" },
   "Ancado Inner Harbor": { x: 920, y: 550, region: "Hakoven" },
-  "Arehaza": { x: 980, y: 650, region: "Hakoven" }
+  "Arehaza": { x: 980, y: 650, region: "Hakoven" },
+
+  // Extra/Minor Islands to populate the dropdown
+  "Al-Naha Island": { x: 0, y: 0, region: "Balenos" },
+  "Baeza Island": { x: 0, y: 0, region: "Balenos" },
+  "Anga Island": { x: 0, y: 0, region: "Balenos" },
+  "Rancito Island": { x: 0, y: 0, region: "Balenos" },
+  "Kanvera Island": { x: 0, y: 0, region: "Balenos" },
+  "Marlene Island": { x: 0, y: 0, region: "Balenos" },
+  "Luivano Island": { x: 0, y: 0, region: "Balenos" },
+  "Paratama Island": { x: 0, y: 0, region: "Balenos" },
+  "Pilava Island": { x: 0, y: 0, region: "Balenos" },
+  "Orffs Island": { x: 0, y: 0, region: "Balenos" },
+  "Coba Island": { x: 0, y: 0, region: "Balenos" },
+  "Tulu Island": { x: 0, y: 0, region: "Balenos" },
+  "Serca Island": { x: 0, y: 0, region: "Epheria" },
+  "Narvo Island": { x: 0, y: 0, region: "Epheria" },
+  "Lisenza Island": { x: 0, y: 0, region: "Epheria" },
+  "Lerao Island": { x: 0, y: 0, region: "Epheria" },
+  "Derko Island": { x: 0, y: 0, region: "Mediah" },
+  "Puchia Island": { x: 0, y: 0, region: "Mediah" },
+  "Albresser Island": { x: 0, y: 0, region: "Mediah" },
+  "Kasula Island": { x: 0, y: 0, region: "Mediah" },
+  "Riyina Island": { x: 0, y: 0, region: "Mediah" },
+  "Rameda Island": { x: 0, y: 0, region: "Calpheon" },
+  "Thett Island": { x: 0, y: 0, region: "Calpheon" },
+  "Dunde Island": { x: 0, y: 0, region: "Calpheon" },
+  "Evera Island": { x: 0, y: 0, region: "Calpheon" },
+  "Ruluvee Island": { x: 0, y: 0, region: "Calpheon" },
+  "Ronda Island": { x: 0, y: 0, region: "Calpheon" },
+  "Wrecked Cox Pirates' Ship": { x: 0, y: 0, region: "Margoria" },
+  "Star Catcher": { x: 0, y: 0, region: "Margoria" },
+  "Margoria Phantom Ship": { x: 0, y: 0, region: "Margoria" }
 };
 
 /**
