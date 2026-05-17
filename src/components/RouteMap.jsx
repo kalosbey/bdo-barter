@@ -205,7 +205,12 @@ export function RouteMap({ trips, onClose }) {
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>🗺️ Route Visualizer & Editor</h2>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+              <button className="btn-secondary" onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))} style={{ padding: '2px 8px', fontSize: '0.8rem' }}>➖</button>
+              <div style={{ color: 'white', padding: '0 8px', display: 'flex', alignItems: 'center', fontSize: '0.9rem', fontWeight: 'bold', minWidth: '45px', justifyContent: 'center' }}>{Math.round(zoomLevel * 100)}%</div>
+              <button className="btn-secondary" onClick={() => setZoomLevel(z => Math.min(4, z + 0.25))} style={{ padding: '2px 8px', fontSize: '0.8rem' }}>➕</button>
+            </div>
             <button className={editMode ? "btn-primary" : "btn-secondary"} onClick={() => setEditMode(!editMode)}>
               {editMode ? "✅ Done Editing" : "✏️ Edit Map Layout"}
             </button>
@@ -299,12 +304,6 @@ export function RouteMap({ trips, onClose }) {
                     Click anywhere to assign a location!
                   </div>
                 )}
-
-                <div style={{ position: 'fixed', bottom: '40px', right: '40px', display: 'flex', gap: '8px', zIndex: 100, background: 'rgba(0,0,0,0.7)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-                  <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.max(0.5, z - 0.25)); }}>➖</button>
-                  <div style={{ color: 'white', padding: '0 8px', display: 'flex', alignItems: 'center', fontWeight: 'bold' }}>{Math.round(zoomLevel * 100)}%</div>
-                  <button className="btn-secondary" onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.min(4, z + 0.25)); }}>➕</button>
-                </div>
                 
                 {pendingClick && (
                   <div style={{
