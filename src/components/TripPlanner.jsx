@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { TIER_DATA } from '../data/barter-data-v3';
 import { TIER_NAMES } from '../data/lang';
+import { findCoords } from '../data/map-data';
+
+// Helper to get euclidean distance
+const getDistance = (locA, locB) => {
+  const a = findCoords(locA);
+  const b = findCoords(locB);
+  if (!a || !b) return 0; 
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+};
 
 /**
  * Multi-Trip Smart Optimizer + Trip List UI
@@ -67,83 +76,157 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
       let tripParley = 0;
       const tripShipInv = {}; // items on ship during this trip
 
-      // Process trades in tier order (low to high)
-      // shipCargo = actual weight currently on ship
+      // Process trades spatially
       let shipCargo = 0;
+      let currentLoc = "Iliya Island"; // Start at hub
 
-      for (const trade of allTrades) {
-        const rem = remaining[trade._origIdx];
-        if (rem <= 0) continue;
+      let addedToTrip = true;
+      while (addedToTrip) {
+        addedToTrip = false;
+        
+        let bestTrade = null;
+        let bestCost = Infinity;
+        let bestCanDo = 0;
+        let bestParley = 0;
+        let bestShipCargo = 0;
 
-        const parleyPerExchange = trade.parley || 0;
-        const fromWeight = isT0(trade.fromTier) ? 0 : (TIER_DATA[trade.fromTier]?.weight || 0);
-        const toWeight = TIER_DATA[trade.toTier]?.weight || 0;
-        const toQty = trade.toQty || 1;
+        for (const trade of allTrades) {
+          const rem = remaining[trade._origIdx];
+          if (rem <= 0) continue;
 
-        // Try to fit as many exchanges as possible
-        let canDo = 0;
-        for (let i = 0; i < rem; i++) {
-          // Check parley
-          if (parleyLeft - tripParley - parleyPerExchange < 0) break;
+          const parleyPerExchange = trade.parley || 0;
+          const fromWeight = isT0(trade.fromTier) ? 0 : (TIER_DATA[trade.fromTier]?.weight || 0);
+          const toWeight = TIER_DATA[trade.toTier]?.weight || 0;
+          const toQty = trade.toQty || 1;
 
-          // Check inventory (skip T0)
+          if (parleyLeft - tripParley - parleyPerExchange < 0) continue;
+
+          let onShip = 0;
+          let inStorage = 0;
           if (!isT0(trade.fromTier)) {
+            const shipKey = trade.fromTier + ':' + trade.fromName;
+            onShip = tripShipInv[shipKey] || 0;
             const invArr = simInv[trade.fromTier] || [];
-            const shipKey = trade.fromTier + ':' + trade.fromName;
-            const onShip = tripShipInv[shipKey] || 0;
-            const inStorage = invArr.find(x => x.name === trade.fromName)?.qty || 0;
-            if (onShip + inStorage < 1) break;
+            inStorage = invArr.find(x => x.name === trade.fromName)?.qty || 0;
+            if (onShip + inStorage < 1) continue;
           }
 
-          // Weight check: simulate loading from-item (if from port) then trading
           let loadFromPort = 0;
-          if (!isT0(trade.fromTier)) {
-            const shipKey = trade.fromTier + ':' + trade.fromName;
-            if ((tripShipInv[shipKey] || 0) < 1) {
-              loadFromPort = fromWeight; // need to bring from port
-            }
+          let needToReturnToHub = false;
+          if (!isT0(trade.fromTier) && onShip < 1) {
+            loadFromPort = fromWeight;
+            needToReturnToHub = true; // Have to get it from Iliya
           }
 
-          // After this trade: cargo += loadFromPort (load item) - fromWeight (trade away) + toQty*toWeight (receive)
-          // Peak moment is right before trading (when loaded item is still on ship)
           const peakIfLoaded = shipCargo + loadFromPort;
-          // After trade completes: 
           const afterTrade = shipCargo + loadFromPort - fromWeight + (toQty * toWeight);
-          
-          if (Math.max(peakIfLoaded, afterTrade) > maxWt) break;
+          if (Math.max(peakIfLoaded, afterTrade) > maxWt) continue;
 
-          canDo++;
-          tripParley += parleyPerExchange;
-          shipCargo = afterTrade;
-
-          // Update ship inventory for chain tracking
-          if (!isT0(trade.fromTier)) {
-            const shipKey = trade.fromTier + ':' + trade.fromName;
-            if ((tripShipInv[shipKey] || 0) >= 1) {
-              tripShipInv[shipKey] -= 1;
-            } else {
-              const invArr = simInv[trade.fromTier] || [];
-              const idx = invArr.findIndex(x => x.name === trade.fromName);
-              if (idx !== -1) invArr[idx].qty -= 1;
+          // Calculate Cost (Distance)
+          let distCost = 0;
+          if (needToReturnToHub) {
+            distCost = getDistance(currentLoc, "Iliya Island") + getDistance("Iliya Island", trade.location);
+          } else {
+            distCost = getDistance(currentLoc, trade.location);
+            // HUGE bonus if it's already on the ship! We want to chain!
+            if (!isT0(trade.fromTier)) {
+              distCost -= 10000;
             }
           }
-          const toKey = trade.toTier + ':' + trade.toName;
-          tripShipInv[toKey] = (tripShipInv[toKey] || 0) + toQty;
+          
+          // Also prefer lower tier trades if distances are similar to ensure we build up items
+          distCost += (tierOrder[trade.fromTier] ?? 99) * 10;
+
+          if (distCost < bestCost) {
+            // Find max canDo for this trade
+            let tempCanDo = 0;
+            let tempParley = 0;
+            let tempShipCargo = shipCargo;
+            let tempTripShipInv = { ...tripShipInv };
+            let tempSimInv = JSON.parse(JSON.stringify(simInv));
+
+            for (let i = 0; i < rem; i++) {
+              if (parleyLeft - tripParley - tempParley - parleyPerExchange < 0) break;
+              
+              let currentOnShip = 0;
+              let currentInStorage = 0;
+              if (!isT0(trade.fromTier)) {
+                const shipKey = trade.fromTier + ':' + trade.fromName;
+                currentOnShip = tempTripShipInv[shipKey] || 0;
+                const invArr = tempSimInv[trade.fromTier] || [];
+                currentInStorage = invArr.find(x => x.name === trade.fromName)?.qty || 0;
+                if (currentOnShip + currentInStorage < 1) break;
+              }
+
+              let currentLoadFromPort = 0;
+              if (!isT0(trade.fromTier) && currentOnShip < 1) {
+                currentLoadFromPort = fromWeight;
+              }
+
+              const pLoaded = tempShipCargo + currentLoadFromPort;
+              const aTrade = tempShipCargo + currentLoadFromPort - fromWeight + (toQty * toWeight);
+              if (Math.max(pLoaded, aTrade) > maxWt) break;
+
+              tempCanDo++;
+              tempParley += parleyPerExchange;
+              tempShipCargo = aTrade;
+
+              if (!isT0(trade.fromTier)) {
+                const shipKey = trade.fromTier + ':' + trade.fromName;
+                if ((tempTripShipInv[shipKey] || 0) >= 1) {
+                  tempTripShipInv[shipKey] -= 1;
+                } else {
+                  const invArr = tempSimInv[trade.fromTier] || [];
+                  const idx = invArr.findIndex(x => x.name === trade.fromName);
+                  if (idx !== -1) invArr[idx].qty -= 1;
+                }
+              }
+              const toKey = trade.toTier + ':' + trade.toName;
+              tempTripShipInv[toKey] = (tempTripShipInv[toKey] || 0) + toQty;
+            }
+            
+            if (tempCanDo > 0) {
+              bestCost = distCost;
+              bestTrade = trade;
+              bestCanDo = tempCanDo;
+              bestParley = tempParley;
+              bestShipCargo = tempShipCargo;
+            }
+          }
         }
 
-        if (canDo > 0) {
+        if (bestTrade && bestCanDo > 0) {
+          addedToTrip = true;
           tripTrades.push({
-            fromTier: trade.fromTier,
-            fromName: trade.fromName,
-            toTier: trade.toTier,
-            toName: trade.toName,
-            toQty: trade.toQty,
-            exchanges: canDo,
-            parley: trade.parley,
-            location: trade.location,
-            _origIdx: trade._origIdx,
+            fromTier: bestTrade.fromTier,
+            fromName: bestTrade.fromName,
+            toTier: bestTrade.toTier,
+            toName: bestTrade.toName,
+            toQty: bestTrade.toQty,
+            exchanges: bestCanDo,
+            parley: bestTrade.parley,
+            location: bestTrade.location,
+            _origIdx: bestTrade._origIdx,
           });
-          remaining[trade._origIdx] -= canDo;
+          remaining[bestTrade._origIdx] -= bestCanDo;
+          tripParley += bestParley;
+          shipCargo = bestShipCargo;
+
+          for (let i = 0; i < bestCanDo; i++) {
+            if (!isT0(bestTrade.fromTier)) {
+              const shipKey = bestTrade.fromTier + ':' + bestTrade.fromName;
+              if ((tripShipInv[shipKey] || 0) >= 1) {
+                tripShipInv[shipKey] -= 1;
+              } else {
+                const invArr = simInv[bestTrade.fromTier] || [];
+                const idx = invArr.findIndex(x => x.name === bestTrade.fromName);
+                if (idx !== -1) invArr[idx].qty -= 1;
+              }
+            }
+            const toKey = bestTrade.toTier + ':' + bestTrade.toName;
+            tripShipInv[toKey] = (tripShipInv[toKey] || 0) + (bestTrade.toQty || 1);
+          }
+          currentLoc = bestTrade.location || "Iliya Island";
         }
       }
 
