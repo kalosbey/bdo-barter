@@ -83,7 +83,8 @@ export function RouteMap({ trips, onClose }) {
       const customCoords = getCustomCoords();
       for (const [name, data] of Object.entries(customCoords)) {
         const d = Math.sqrt(Math.pow(x - data.x, 2) + Math.pow(y - data.y, 2));
-        if (d < 15) {
+        // Reduced hitbox from 15 to 8 so it perfectly matches the 12px visual dot size
+        if (d < 8) {
           if (window.confirm(`Delete custom location: ${name}?`)) {
             removeCustomCoord(name);
             setRenderTrigger(prev => prev + 1);
