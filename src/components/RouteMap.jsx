@@ -3,13 +3,16 @@ import { createPortal } from 'react-dom';
 import { findCoords, saveCustomCoord, getCustomCoords, removeCustomCoord, MAP_COORDS } from '../data/map-data';
 
 export function RouteMap({ trips, onClose }) {
-  const [activeTripId, setActiveTripId] = useState(trips.length > 0 ? trips[0].id : null);
+  const [activeTripId, setActiveTripId] = useState(null); // null means Global Map
   const activeTrip = trips.find(t => t.id === activeTripId);
   const [bgImage, setBgImage] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [renderTrigger, setRenderTrigger] = useState(0); // force re-render when custom coords change
   const [pendingClick, setPendingClick] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0, sLeft: 0, sTop: 0, time: 0 });
+  const scrollWrapperRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -41,28 +44,59 @@ export function RouteMap({ trips, onClose }) {
     }
   };
 
-  const handleMapClick = (e) => {
-    if (!editMode || pendingClick) return;
+  const handleMouseDown = (e) => {
+    if (e.button !== 0 || pendingClick || e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') return;
+    setIsDragging(true);
+    dragStartPos.current = {
+      x: e.clientX,
+      y: e.clientY,
+      sLeft: scrollWrapperRef.current.scrollLeft,
+      sTop: scrollWrapperRef.current.scrollTop,
+      time: Date.now()
+    };
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !scrollWrapperRef.current) return;
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    scrollWrapperRef.current.scrollLeft = dragStartPos.current.sLeft - dx;
+    scrollWrapperRef.current.scrollTop = dragStartPos.current.sTop - dy;
+  };
+
+  const handleMouseUp = (e) => {
+    if (!isDragging) return;
+    setIsDragging(false);
     
-    // Get coordinates relative to the map container
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoomLevel;
-    const y = (e.clientY - rect.top) / zoomLevel;
+    const dx = e.clientX - dragStartPos.current.x;
+    const dy = e.clientY - dragStartPos.current.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const timeDelta = Date.now() - dragStartPos.current.time;
+    
+    // If it was a quick click without moving, process it as a map click
+    if (dist < 5 && timeDelta < 500 && editMode && !pendingClick) {
+      const rect = scrollWrapperRef.current.firstElementChild.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / zoomLevel;
+      const y = (e.clientY - rect.top) / zoomLevel;
 
-    // Check if clicking near an existing custom point
-    const customCoords = getCustomCoords();
-    for (const [name, data] of Object.entries(customCoords)) {
-      const dist = Math.sqrt(Math.pow(x - data.x, 2) + Math.pow(y - data.y, 2));
-      if (dist < 15) {
-        if (window.confirm(`Delete custom location: ${name}?`)) {
-          removeCustomCoord(name);
-          setRenderTrigger(prev => prev + 1);
+      // Check if clicking near an existing custom point
+      const customCoords = getCustomCoords();
+      for (const [name, data] of Object.entries(customCoords)) {
+        const d = Math.sqrt(Math.pow(x - data.x, 2) + Math.pow(y - data.y, 2));
+        if (d < 15) {
+          if (window.confirm(`Delete custom location: ${name}?`)) {
+            removeCustomCoord(name);
+            setRenderTrigger(prev => prev + 1);
+          }
+          return;
         }
-        return; // Don't add a new point if we clicked to delete
       }
+      setPendingClick({ x, y });
     }
+  };
 
-    setPendingClick({ x, y });
+  const handleMouseLeave = () => {
+    setIsDragging(false);
   };
 
   const mapStyle = {
@@ -81,7 +115,6 @@ export function RouteMap({ trips, onClose }) {
     overflow: 'hidden',
     boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
     margin: '0 auto',
-    cursor: editMode ? 'crosshair' : 'default',
   };
 
   const renderPointsAndLines = () => {
@@ -175,8 +208,8 @@ export function RouteMap({ trips, onClose }) {
             </div>
           </div>
         ))}
-        {/* Render ALL custom points faintly when in Edit Mode so the user can see them */}
-        {editMode && Object.entries(getCustomCoords()).map(([name, data]) => (
+        {/* Render ALL custom points when activeTripId is null OR when in editMode */}
+        {(editMode || activeTripId === null) && Object.entries(getCustomCoords()).map(([name, data]) => (
           <div key={`edit-pt-${name}-${renderTrigger}`} style={{
             position: 'absolute',
             left: `${data.x * zoomLevel}px`,
@@ -211,9 +244,11 @@ export function RouteMap({ trips, onClose }) {
               <div style={{ color: 'white', padding: '0 8px', display: 'flex', alignItems: 'center', fontSize: '0.9rem', fontWeight: 'bold', minWidth: '45px', justifyContent: 'center' }}>{Math.round(zoomLevel * 100)}%</div>
               <button className="btn-secondary" onClick={() => setZoomLevel(z => Math.min(4, z + 0.25))} style={{ padding: '2px 8px', fontSize: '0.8rem' }}>➕</button>
             </div>
-            <button className={editMode ? "btn-primary" : "btn-secondary"} onClick={() => setEditMode(!editMode)}>
-              {editMode ? "✅ Done Editing" : "✏️ Edit Map Layout"}
-            </button>
+            {activeTripId === null && (
+              <button className={editMode ? "btn-primary" : "btn-secondary"} onClick={() => setEditMode(!editMode)}>
+                {editMode ? "✅ Done Editing" : "✏️ Edit Map Layout"}
+              </button>
+            )}
             <button className="add-trade-cancel" onClick={onClose} style={{ padding: '6px 12px' }}>✕ Close</button>
           </div>
         </div>
@@ -255,13 +290,34 @@ export function RouteMap({ trips, onClose }) {
               🚢 Planned Trips
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
+              <div 
+                onClick={() => { setActiveTripId(null); }}
+                style={{ 
+                  padding: '16px', 
+                  cursor: 'pointer',
+                  background: activeTripId === null ? 'rgba(74, 144, 217, 0.15)' : 'transparent',
+                  borderLeft: activeTripId === null ? '4px solid var(--accent-gold)' : '4px solid transparent',
+                  borderBottom: '1px solid var(--border-color)',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span style={{ fontSize: '1.2rem' }}>🗺️</span>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: activeTripId === null ? 'var(--accent-gold)' : 'var(--text-primary)' }}>Global Map</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>Edit layout & see all islands</div>
+                </div>
+              </div>
+
               {trips.length === 0 ? (
                 <div style={{ padding: '16px', color: 'var(--text-muted)', textAlign: 'center' }}>No planned trips.</div>
               ) : (
                 trips.map(trip => (
                   <div 
                     key={trip.id} 
-                    onClick={() => setActiveTripId(trip.id)}
+                    onClick={() => { setActiveTripId(trip.id); setEditMode(false); }}
                     style={{ 
                       padding: '16px', 
                       cursor: 'pointer',
@@ -284,9 +340,16 @@ export function RouteMap({ trips, onClose }) {
           </div>
 
           {/* Map Area */}
-          <div style={{ flex: 1, padding: '20px', overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050a10' }}>
-            <div style={{ overflow: 'auto', width: '100%', height: '100%' }}>
-              <div style={mapStyle} onClick={handleMapClick}>
+          <div style={{ flex: 1, padding: '20px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050a10' }}>
+            <div 
+              ref={scrollWrapperRef}
+              style={{ overflow: 'auto', width: '100%', height: '100%', cursor: isDragging ? 'grabbing' : (editMode ? 'crosshair' : 'grab') }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+            >
+              <div style={mapStyle}>
                 {renderPointsAndLines()}
                 
                 {/* Fallback Labels if no custom bg uploaded */}
