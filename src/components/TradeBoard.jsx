@@ -14,7 +14,8 @@ export function TradeBoard({ state, updateState }) {
     fromTier: "T1", fromName: "",
     toTier: "T2", toName: "",
     toQty: 3, exchanges: 1,
-    parley: state.parleyCostPerTrade || 0
+    parley: state.parleyCostPerTrade || 0,
+    location: ""
   });
   const [editingTradeIdx, setEditingTradeIdx] = useState(null);
 
@@ -297,6 +298,7 @@ export function TradeBoard({ state, updateState }) {
                       <span style={{ color: 'var(--accent-cyan)', margin: '0 6px' }}>➔</span>
                       <span style={{ color: 'var(--text-muted)' }}>{TIER_NAMES[state.lang][t.toTier] || t.toTier}</span>{' '}
                       <strong>{t.toName}</strong>
+                      {t.location && <span style={{ color: 'var(--text-secondary)', marginLeft: '8px', fontSize: '0.8rem' }}>📍 {t.location}</span>}
                     </span>
                   </div>
                   <span style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>×{t.exchanges}</span>
@@ -415,6 +417,12 @@ export function TradeBoard({ state, updateState }) {
               <div className="add-trade-qty-group">
                 <label>{dict.parleyCost || "Parley/Trade"}</label>
                 <input type="number" min="0" value={wizardDraft.parley} onChange={e => setWizardDraft({...wizardDraft, parley: parseInt(e.target.value)||0})} />
+              </div>
+            </div>
+            <div className="add-trade-qty-row" style={{ marginTop: '12px' }}>
+              <div className="add-trade-qty-group" style={{ flex: 1 }}>
+                <label>📍 Region / Location (Optional)</label>
+                <input type="text" placeholder="e.g. Iliya, Hakoven, Margoria..." value={wizardDraft.location || ""} onChange={e => setWizardDraft({...wizardDraft, location: e.target.value})} style={{ width: '100%', padding: '8px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-primary)' }} />
               </div>
             </div>
           </div>
@@ -626,6 +634,11 @@ export function TradeBoard({ state, updateState }) {
                             <span className="trade-name">{trade.toName}</span>
                           </div>
                         </div>
+                        {trade.location && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                            📍 {trade.location}
+                          </div>
+                        )}
                         <div className="trade-details">
                           <span className="badge" title={dict.exchanges || "Exchanges"}>
                             {trade.toQty}:{trade.toQty * trade.exchanges} <span style={{color:'var(--text-muted)', fontSize:'0.75rem', fontWeight:'normal', marginLeft:'4px'}}>({trade.exchanges} {dict.exchanges || "Exc"})</span>
