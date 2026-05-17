@@ -283,14 +283,22 @@ export function TradeBoard({ state, updateState }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {trip.trades.map((t, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: 'var(--bg-dark)', borderRadius: '4px', fontSize: '0.85rem' }}>
-                  <span>
-                    <span style={{ color: 'var(--text-muted)' }}>{TIER_NAMES[state.lang][t.fromTier] || t.fromTier}</span>{' '}
-                    <strong>{t.fromName}</strong>
-                    <span style={{ color: 'var(--accent-cyan)', margin: '0 6px' }}>➔</span>
-                    <span style={{ color: 'var(--text-muted)' }}>{TIER_NAMES[state.lang][t.toTier] || t.toTier}</span>{' '}
-                    <strong>{t.toName}</strong>
-                  </span>
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'var(--bg-dark)', borderRadius: '4px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {!trip.completed && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <button onClick={() => planner.moveTradeUp(trip.id, i)} disabled={i === 0} style={{ padding: 0, background: 'transparent', border: 'none', color: i === 0 ? 'transparent' : 'var(--text-secondary)', cursor: i === 0 ? 'default' : 'pointer', fontSize: '10px', lineHeight: '10px' }} title="Move Up">▲</button>
+                        <button onClick={() => planner.moveTradeDown(trip.id, i)} disabled={i === trip.trades.length - 1} style={{ padding: 0, background: 'transparent', border: 'none', color: i === trip.trades.length - 1 ? 'transparent' : 'var(--text-secondary)', cursor: i === trip.trades.length - 1 ? 'default' : 'pointer', fontSize: '10px', lineHeight: '10px' }} title="Move Down">▼</button>
+                      </div>
+                    )}
+                    <span>
+                      <span style={{ color: 'var(--text-muted)' }}>{TIER_NAMES[state.lang][t.fromTier] || t.fromTier}</span>{' '}
+                      <strong>{t.fromName}</strong>
+                      <span style={{ color: 'var(--accent-cyan)', margin: '0 6px' }}>➔</span>
+                      <span style={{ color: 'var(--text-muted)' }}>{TIER_NAMES[state.lang][t.toTier] || t.toTier}</span>{' '}
+                      <strong>{t.toName}</strong>
+                    </span>
+                  </div>
                   <span style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>×{t.exchanges}</span>
                 </div>
               ))}

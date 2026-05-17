@@ -219,6 +219,29 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
     setTrips(prev => prev.map(t => t.id === tripId ? { ...t, completed: true } : t));
   };
 
+  const moveTradeUp = (tripId, tradeIdx) => {
+    if (tradeIdx <= 0) return;
+    setTrips(prev => prev.map(t => {
+      if (t.id !== tripId) return t;
+      const newTrades = [...t.trades];
+      const temp = newTrades[tradeIdx - 1];
+      newTrades[tradeIdx - 1] = newTrades[tradeIdx];
+      newTrades[tradeIdx] = temp;
+      return { ...t, trades: newTrades };
+    }));
+  };
+
+  const moveTradeDown = (tripId, tradeIdx) => {
+    setTrips(prev => prev.map(t => {
+      if (t.id !== tripId || tradeIdx >= t.trades.length - 1) return t;
+      const newTrades = [...t.trades];
+      const temp = newTrades[tradeIdx + 1];
+      newTrades[tradeIdx + 1] = newTrades[tradeIdx];
+      newTrades[tradeIdx] = temp;
+      return { ...t, trades: newTrades };
+    }));
+  };
+
   return {
     trips, setTrips,
     showOptimizer, setShowOptimizer,
@@ -226,5 +249,6 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
     optimizerParley, setOptimizerParley,
     optimizerWeight, setOptimizerWeight,
     boardTiers, runOptimizer, completeTrip,
+    moveTradeUp, moveTradeDown,
   };
 }
