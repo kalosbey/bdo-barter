@@ -35,6 +35,12 @@ export const MAP_COORDS = {
   "Modric Island": { x: 350, y: 520, region: "Epheria" },
   "Padix Island": { x: 320, y: 480, region: "Epheria" },
   "Teste Island": { x: 380, y: 550, region: "Epheria" },
+  "Riyed Island": { x: 280, y: 550, region: "Epheria" },
+  
+  // Nox Sea / North of Lema
+  "Orisha Island": { x: 650, y: 350, region: "Nox" },
+  "Shirna Island": { x: 670, y: 360, region: "Nox" },
+  "Almai Island": { x: 630, y: 340, region: "Nox" },
   "Netnume Island": { x: 400, y: 520, region: "Balenos" },
   
   // Eastern Valencia
