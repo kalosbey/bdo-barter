@@ -260,8 +260,7 @@ export function TradeBoard({ state, updateState }) {
       <div style={{ marginTop: '24px' }}>
         <h3 style={{ color: 'var(--accent-cyan)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           🚢 Planned Trips ({planner.trips.filter(t => !t.completed).length} remaining)
-          <button className="btn-secondary" onClick={() => setShowMap(true)} style={{ marginLeft: 'auto', padding: '4px 12px', fontSize: '0.8rem' }}>🗺️ View Map</button>
-          <button className="btn-danger" onClick={() => planner.setTrips([])} style={{ padding: '4px 12px', fontSize: '0.8rem' }}>Clear Trips</button>
+          <button className="btn-danger" onClick={() => planner.setTrips([])} style={{ marginLeft: 'auto', padding: '4px 12px', fontSize: '0.8rem' }}>Clear Trips</button>
         </h3>
         {planner.trips.map((trip) => (
           <div key={trip.id} style={{
@@ -495,8 +494,15 @@ export function TradeBoard({ state, updateState }) {
   return (
     <div>
       <div className="board-header">
-        <h2>🗺️ {dict.boardTitle || "Current Barter Route"}</h2>
-        <p>{dict.boardDesc || "Plan your trades in order."}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2>🗺️ {dict.boardTitle || "Current Barter Route"}</h2>
+            <p>{dict.boardDesc || "Plan your trades in order."}</p>
+          </div>
+          <button className="btn-secondary" onClick={() => setShowMap(true)} style={{ padding: '8px 16px', fontSize: '1rem', background: 'var(--accent-gold)', color: 'black', fontWeight: 'bold' }}>
+            🗺️ Open Map Editor
+          </button>
+        </div>
         <div className="board-toolbar" style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
           <button className="btn-primary" onClick={() => setShowWizard(true)}>＋ {dict.addTrade || "Add Trade"}</button>
           <button className="btn-secondary" onClick={() => { planner.setOptimizerParley(state.parleyCurrent || 0); planner.setOptimizerWeight(MAX_WEIGHT); planner.setShowOptimizer(true); }}>🤖 Smart Optimize</button>
