@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { findCoords, saveCustomCoord } from '../data/map-data';
+import { findCoords, saveCustomCoord, getCustomCoords, removeCustomCoord } from '../data/map-data';
 
 export function RouteMap({ trips, onClose }) {
   const [activeTripId, setActiveTripId] = useState(trips.length > 0 ? trips[0].id : null);
@@ -46,6 +46,19 @@ export function RouteMap({ trips, onClose }) {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    // Check if clicking near an existing custom point
+    const customCoords = getCustomCoords();
+    for (const [name, data] of Object.entries(customCoords)) {
+      const dist = Math.sqrt(Math.pow(x - data.x, 2) + Math.pow(y - data.y, 2));
+      if (dist < 15) {
+        if (window.confirm(`Delete custom location: ${name}?`)) {
+          removeCustomCoord(name);
+          setRenderTrigger(prev => prev + 1);
+        }
+        return; // Don't add a new point if we clicked to delete
+      }
+    }
 
     const name = window.prompt("📍 Edit Mode: Clicked at (" + Math.round(x) + ", " + Math.round(y) + ")\nEnter the exact Island Name for this spot (e.g. 'Lema Island'):");
     if (name && name.trim() !== "") {
@@ -128,7 +141,7 @@ export function RouteMap({ trips, onClose }) {
             left: `${p.x}px`,
             top: `${p.y}px`,
             transform: 'translate(-50%, -50%)',
-            zIndex: 2,
+            zIndex: 3,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -155,6 +168,25 @@ export function RouteMap({ trips, onClose }) {
               <span style={{color:'var(--text-muted)', marginRight:'4px'}}>{i+1}.</span> 
               {p.name}
               <div style={{fontSize: '0.7rem', color: 'var(--text-secondary)'}}>{p.trade.fromName} ➔</div>
+            </div>
+          </div>
+        ))}
+        {/* Render ALL custom points faintly when in Edit Mode so the user can see them */}
+        {editMode && Object.entries(getCustomCoords()).map(([name, data]) => (
+          <div key={`edit-pt-${name}-${renderTrigger}`} style={{
+            position: 'absolute',
+            left: `${data.x}px`,
+            top: `${data.y}px`,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            pointerEvents: 'none'
+          }}>
+            <div style={{ width: '12px', height: '12px', backgroundColor: 'var(--accent-gold)', borderRadius: '50%', border: '2px solid white' }} />
+            <div style={{ background: 'rgba(0,0,0,0.8)', color: 'var(--accent-gold)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', marginTop: '4px', whiteSpace: 'nowrap' }}>
+              {name}
             </div>
           </div>
         ))}
