@@ -264,7 +264,7 @@ export function RouteMap({ trips, onClose }) {
                 <h4 style={{ margin: '0 0 12px 0', color: 'var(--accent-cyan)' }}>✏️ Editor Tools</h4>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                   1. Upload your custom map background.<br/>
-                  2. Click anywhere on the map to define an island's exact coordinate.<br/>
+                  2. Click anywhere on the map to define a location's exact coordinate.<br/>
                   3. Your custom locations override the default ones!
                 </p>
                 
@@ -307,7 +307,7 @@ export function RouteMap({ trips, onClose }) {
                 <span style={{ fontSize: '1.2rem' }}>🗺️</span>
                 <div>
                   <div style={{ fontWeight: 'bold', color: activeTripId === null ? 'var(--accent-gold)' : 'var(--text-primary)' }}>Global Map</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>Edit layout & see all islands</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>Edit layout & see all locations</div>
                 </div>
               </div>
 
@@ -383,7 +383,7 @@ export function RouteMap({ trips, onClose }) {
                     zIndex: 200,
                     width: '200px'
                   }} onClick={e => e.stopPropagation()}>
-                    <label style={{display:'block', marginBottom:'8px', fontSize:'0.85rem', color:'var(--text-secondary)'}}>Select Island Name:</label>
+                    <label style={{display:'block', marginBottom:'8px', fontSize:'0.85rem', color:'var(--text-secondary)'}}>Select Location/Port Name:</label>
                     <input 
                       type="text" 
                       list="all-islands"
