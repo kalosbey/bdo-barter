@@ -4,11 +4,13 @@ import { LANG, TIER_NAMES } from '../data/lang';
 import { TIER_DATA, SHIP_DATA, PARLEY_CONFIG } from '../data/barter-data-v3';
 import { IconSelectBtn, IconPickerModal } from './IconPickerModal';
 import { useTripPlanner } from './TripPlanner';
+import { RouteMap } from './RouteMap';
 
 export function TradeBoard({ state, updateState }) {
   const dict = LANG[state.lang] || LANG.en;
   
   const [showWizard, setShowWizard] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [wizardCart, setWizardCart] = useState([]);
   const [wizardDraft, setWizardDraft] = useState({
     fromTier: "T1", fromName: "",
@@ -257,7 +259,8 @@ export function TradeBoard({ state, updateState }) {
       <div style={{ marginTop: '24px' }}>
         <h3 style={{ color: 'var(--accent-cyan)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           🚢 Planned Trips ({planner.trips.filter(t => !t.completed).length} remaining)
-          <button className="btn-danger" onClick={() => planner.setTrips([])} style={{ marginLeft: 'auto', padding: '4px 12px', fontSize: '0.8rem' }}>Clear Trips</button>
+          <button className="btn-secondary" onClick={() => setShowMap(true)} style={{ marginLeft: 'auto', padding: '4px 12px', fontSize: '0.8rem' }}>🗺️ View Map</button>
+          <button className="btn-danger" onClick={() => planner.setTrips([])} style={{ padding: '4px 12px', fontSize: '0.8rem' }}>Clear Trips</button>
         </h3>
         {planner.trips.map((trip) => (
           <div key={trip.id} style={{
@@ -686,6 +689,7 @@ export function TradeBoard({ state, updateState }) {
 
       {renderWizard()}
       {renderOptimizerModal()}
+      {showMap && <RouteMap trips={planner.trips} onClose={() => setShowMap(false)} />}
       
       {pickerConfig && (
         <IconPickerModal 
