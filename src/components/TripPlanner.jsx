@@ -140,6 +140,7 @@ export function useTripPlanner(state, updateState, MAX_WEIGHT) {
             toQty: trade.toQty,
             exchanges: canDo,
             parley: trade.parley,
+            location: trade.location,
             _origIdx: trade._origIdx,
           });
           remaining[trade._origIdx] -= canDo;
